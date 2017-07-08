@@ -31,33 +31,52 @@ var basicQnAMakerDialog = new builder_cognitiveservices.QnAMakerDialog({
     // ************** El código aquí *****************
     
     // Dialogos
-    bot.dialog('/', [
-        function (session, results, next) {
-            builder.Prompts.text(session, '¿Cómo te llamas?');
+    bot.dialog("/", [
+        function(session)
+        {
+            session.beginDialog("/preguntarDatosPersonales");
         },
-        function (session, results) {
-            session.dialogData.nombre = results.response;
-            builder.Prompts.number(session, `Ok, ${session.dialogData.nombre}. ¿Cuál es tu edad?`);
+        function(session)
+        {
+            // Crear targeta final, para que me sigan en twitter
+            var twitterCard = new builder.HeroCard(session)
+                .title("Gracias por tu colaboración")
+                .text("Si quieres mas sobre bots, sigan en Twitter a @rarrebolaedcm15")
+                .images([
+                    builder.CardImage.create(session, "https://avatars1.githubusercontent.com/u/6422482?v=3&s=400")
+                ])
+                .buttons([
+                    builder.CardAction.openUrl(session, "https://twitter.com/rarrebolaedcm15", "Sígueme en Twitter")
+                ]);
+            
+            // Adjuntamos la targeta al mensaje
+            var msj = new builder.Message(session).addAttachment(twitterCard);
+            session.send(msj);
+
+        }
+    ]);
+
+    bot.dialog("/preguntarDatosPersonales", [
+        function(session, next)
+        {   
+            // Preguntamos el nombre
+            builder.Prompts.text(session, "¿Cómo te llamas?");
         },
-        function (session, results) {
-            session.dialogData.edad = results.response;
-            builder.Prompts.time(session, `¿Qué hora es?`);
+        function(session, result)
+        {
+            // Guardamos el nombre
+            session.userData.username = result.response;
+
+            // Preguntamos la edad
+            builder.Prompts.text(session, "¿Que edad tienes?");
         },
-        function (session, results) {
-            session.dialogData.hora = builder.EntityRecognizer.resolveTime([results.response]);
-            builder.Prompts.choice(session, '¿Cuál prefieres?', 'Mar|Montaña', { listStyle: builder.ListStyle.button });
-        },
-        function (session, results) {
-            session.dialogData.preferencia = results.response.entity;
-            builder.Prompts.confirm(session, '¿Quieres ver un resumen?', { listStyle: builder.ListStyle.button });
-        },
-        function (session, results) {
-            if (results.response) {
-                session.endDialog(`Me contaste que tu nombre es **${session.dialogData.nombre}**, tienes **${session.dialogData.edad}** años, son las **${session.dialogData.hora}** y prefieres **${session.dialogData.preferencia}**`);
-            }
-            else {
-                session.endDialog('Adios!');
-            }
+        function(session, result)
+        {
+            // Guardamos la edad
+            session.userData.edad = result.response;
+
+            // Finalizamos este dialogo con el bot
+            session.endDialog(`Gracias ${session.userData.username}, he memorizado tus datos`);
         }
     ]);
 
